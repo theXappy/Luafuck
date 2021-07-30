@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31512.422
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Luafuck", "Luafuck\Luafuck.csproj", "{93C7023A-1546-4001-936D-E1DFE1EE3CED}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{93C7023A-1546-4001-936D-E1DFE1EE3CED}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{93C7023A-1546-4001-936D-E1DFE1EE3CED}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{93C7023A-1546-4001-936D-E1DFE1EE3CED}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{93C7023A-1546-4001-936D-E1DFE1EE3CED}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {6F8CCAC1-80EA-49A8-9E98-C9DBC463A223}
+	EndGlobalSection
+EndGlobal

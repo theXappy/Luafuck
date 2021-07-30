@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Luafuck": {
+      "commandName": "Project",
+      "commandLineArgs": "C:\\Users\\Shai\\Desktop\\simple_dissector.lua"
+    }
+  }
+}
