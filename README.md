@@ -3,7 +3,7 @@ Rewrite Lua scripts with 13 characters. Charset: `[]()#=._Gchar`
 
 ## Quick-Start
 1. Clone
-2. Open `Luafuck.sln` in Visual Studio 2021 (Preview)
+2. Open `Luafuck.sln` in Visual Studio 2022 (Preview)
 3. Compile (`ctrl+b`)
 4. Run `Luafuck.exe <lua_script_path>` from either 'Debug' or 'Release' dir (based on compilation profile)
 
