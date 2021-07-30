@@ -45,7 +45,9 @@ When transforming a Lua script to Luafuck using this project you'll always get a
 This means this project currently is more of an 'encoder' for Lua scripts, resembling "shellcode encoders" in it's behaviour.
 The encoder itself is, of course, written according to Luafuck's constraint but it does not manipulate original code in a more intimate way.
 
+An example of input & output can be found in this repo's Example directory.
 
+---
 ### Further ideas with unknown possibilties
 * `table.concat` is able to concat strings without the char `.` if we manage to:
     1. Construct a table `t` (note we currently don't use `{}`) where the *array part* contains, in order, the substrings we want to concat. AFAIK this can be done on `_G` with `table.insert`,`table.remove` without obvious side effects.
