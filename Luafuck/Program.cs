@@ -17,9 +17,14 @@ namespace Luafuck
         static void Main(string[] args)
         {
             string originalFilePath = args.FirstOrDefault();
-            if(originalFilePath == null)
+            if(originalFilePath == null || args.Contains("-h"))
             {
-                Console.WriteLine("Missing command line argument: Lua script path");
+                Console.WriteLine($"Usage: {System.AppDomain.CurrentDomain.FriendlyName} <input_lua_script_path>");
+                return;
+            }
+            if(!File.Exists(originalFilePath))
+            {
+                Console.WriteLine($"No such file '{originalFilePath}'");
                 return;
             }
 
