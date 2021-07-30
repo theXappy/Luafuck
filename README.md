@@ -1,4 +1,54 @@
-# luafuck
-Write Lua with X characters [wip]
+# Luafuck
+Rewrite Lua scripts with 13 characters. Charset: `[]()#=._Gchar`  
 
-Currently expected charset: `([#=_Gchar.])` 
+## Quick-Start
+1. Clone
+2. Open `Luafuck.sln` in Visual Studio 2021 (Preview)
+3. Compile (`ctrl+b`)
+4. Run `Luafuck.exe <lua_script_path>` from either 'Debug' or 'Release' dir (based on compilation profile)
+
+## Basics
+```
+1. ""               (Empty string)    ==> '[[]]'
+2. 0                (number)          ==> '#_G' or '#[[]]'
+3. "0"              (string)          ==> '[[]] .. #[[]]'
+4. "00"             (string)          ==> '#[[]] .. #[[]]'
+5. "0000"           (string)          ==> Assume 'str_00' holds "00", 'str_00 .. str_00'
+6. 1                (number)          ==> Assume 'str_0' holds "0", '#str_0'
+7. 2                (number)          ==> Assume 'str_00' holds "00", '#str_00'
+8. 3                (number)          ==> Assume 'str_0','str_00' hold "0" and "00", '#(str_0 .. str00)'
+8. string.char      (func)            ==> '[[]][([[char]])]'
+9. 'a'              (char)            ==> Assume 'strchar' holds 'string.char', 'strchar(97)'
+10. 'b'             (char)            ==> Assume 'strchar' holds 'string.char', 'strchar(98)'
+11. 'abc'           (string)          ==> Assume 'chr_a','chr_b','chr_c' holds the chars, 'char_a .. char_b .. char_c'
+12. Globals table                     ==> '_G'
+13. A global 'glb'                    ==> '_G[([[glb]])]'
+14. loadstring      (func)            ==> '_G[([[loadstring]])]'
+15. Execute code                      ==> Construct the code as a string in memory (like any other 
+                                          string, shown above) then call 'loadstring(code_var)()'
+```
+
+\* Anywhere a string is showing in the examples assume it was constructed by getting individuals chars then concatinating the charaters together.
+
+## Resulting script
+When transforming a Lua script to Luafuck using this project you'll always get a new script with the following structe:
+```
++--------------------------------------+
+| Primitives initalization             |
++======================================+
+| Constructing original code in a      |
+| large string variable "org_code"     |
++======================================+
+| calling loadstring(org_code)()       |
++--------------------------------------+
+```
+This means this project currently is more of an 'encoder' for Lua scripts, resembling "shellcode encoders" in it's behaviour.
+The encoder itself is, of course, written according to Luafuck's constraint but it does not manipulate original code in a more intimate way.
+
+
+### Further ideas with unknown possibilties
+* `table.concat` is able to concat strings without the char `.` if we manage to:
+    1. Construct a table `t` (note we currently don't use `{}`) where the *array part* contains, in order, the substrings we want to concat. AFAIK this can be done on `_G` with `table.insert`,`table.remove` without obvious side effects.
+    2. Somehow retrieve the pointer to `concat` from either the table `t`. Again, `_G` is a good candidate but calling `_G['concat']` forces us to create the string `"concat"` in memory (currently done via concatination) or add `ont` to the charset and use a literal (which means +2 in the charset's size)
+* `string.len` is able to get a string's length without the char `#` if we manage to:
+    1. Access `len` from `[[]]` (any string will do) which is currently only possible via creating the string `"len"` in memory by using `#` on different sized string to get the ASCII values for the char literals.
