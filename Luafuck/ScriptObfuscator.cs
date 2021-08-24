@@ -116,10 +116,15 @@ namespace Luafuck
             // to write the original Lua script in memory (in a variable) then call 'loadstring' on it.
             List<StatementSyntax> statements = new();
             // Shorten global table name: from '_G' to '_'
+            // like that:
+            // _ = _G["_G"]
+            // I use the variable access expression so it ends with a bracket. This is crucial so that
+            // I can start the next expression after it (if it ended with just `_G` the next expression characters would be mmisunderstood
+            // as the rest of the identifier for example `_G_G[ ... ]`
             _globalTableVar = "_";
             statements.Add(SyntaxFactoryEx.AssignmentExpression(
                         SyntaxFactory.IdentifierName(_globalTableVar),
-                        SyntaxFactory.IdentifierName(LUA_DEFAULT_GLOBAL_TABLE_VAR)
+                        FuckedSyntaxFactory.FuckedVariableAccessExpression(LUA_DEFAULT_GLOBAL_TABLE_VAR, LUA_DEFAULT_GLOBAL_TABLE_VAR)
                         ));
 
             // Create primitives
@@ -163,12 +168,17 @@ namespace Luafuck
         /// </summary>
         private List<StatementSyntax> RefactorSyntaxStatements(List<StatementSyntax> statements)
         {
+            bool DEBUGGING = false;
+            if(!DEBUGGING)
+            {
+                return statements;
+            }
+
             List<StatementSyntax> statementsWithEOLs = new();
 
             // This dictionary will hold for every statement a list (possible of length 1) of statements derieved with it 
             // with injected trivia (new line characters) and possibly debugging statements
             Dictionary<StatementSyntax, List<StatementSyntax>> statementsToRefactoredStatments = new();
-            bool DEBUGGING = false;
             foreach (StatementSyntax statement in statements)
             {
                 var currList = new List<StatementSyntax>();
@@ -177,10 +187,6 @@ namespace Luafuck
                 var statementWithTrivia = statement.WithTrailingTrivia(SyntaxFactory.EndOfLine("\n"));
                 currList.Add(statementWithTrivia);
 
-                if (!DEBUGGING)
-                {
-                    continue;
-                }
                 if (!(statement is AssignmentStatementSyntax assgn))
                 {
                     continue;
@@ -357,14 +363,14 @@ namespace Luafuck
         private void CreateBuildingBlocksStrings(List<StatementSyntax> exps)
         {
             // Assigning the first variable -- the one that holds the string of length 1 (It's "0")
-            // The statment is "var_name = [[]] .. #_G"
+            // The statment is "var_name = #_G .. [[]]"
             // It's a concatination of an empty string and the number '0' which result in a the "0" string
             _buildingBlocksStringVars[0] = _variableNamesGenerator.AllocVariable("__BBSTR__" + 0);
             var assgn_1 = SyntaxFactoryEx.AssignmentExpression(
                             FuckedSyntaxFactory.FuckedVariableAccessExpression(_globalTableVar, _buildingBlocksStringVars[0]),
                             SyntaxFactoryEx.ConcatStrings(
-                                FuckedSyntaxFactory.FuckedEmptyString(),
-                                FuckedSyntaxFactory.FuckedZeroInteger(_globalTableVar)
+                                FuckedSyntaxFactory.FuckedZeroInteger(_globalTableVar),
+                                FuckedSyntaxFactory.FuckedEmptyString()
                             ));
             exps.Add(assgn_1);
             _debug_VarNameToExpectedValue[_buildingBlocksStringVars[0]] = "0";
