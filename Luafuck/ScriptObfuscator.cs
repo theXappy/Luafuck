@@ -155,20 +155,20 @@ namespace Luafuck
             statements.Add(SyntaxFactory.ExpressionStatement(loadstringExecuteCall));
 
 
-            // Add end of lines to all statments and possibly debug statements
-            List<StatementSyntax> statementsWithEOLs = RefactorSyntaxStatements(statements);
+            // Add debug info to the script (if enabled, otherwise script is unchanged)
+            List<StatementSyntax> statementsWithEOLs = AddDebugInfo(statements);
 
             var obfusTree = SyntaxFactoryEx.SyntaxTree(statementsWithEOLs);
             return obfusTree;
         }
 
         /// <summary>
-        /// Adds end of lines (\n) to all statments and, if debugging is enabled, adds debugging statements 
+        /// If debugging is enabled adds end of lines (\n) to all statments and seperal debugging statements 
         /// (comment with original var names, print of values, print of types, assert of expected values for assignments)
         /// </summary>
-        private List<StatementSyntax> RefactorSyntaxStatements(List<StatementSyntax> statements)
+        private List<StatementSyntax> AddDebugInfo(List<StatementSyntax> statements)
         {
-            bool DEBUGGING = false;
+            bool DEBUGGING = true;
             if(!DEBUGGING)
             {
                 return statements;
@@ -218,11 +218,10 @@ namespace Luafuck
                 string resolvedOriginalVarName = this._variableNamesGenerator.ResolveBack(obfsVarName);
 
                 statementWithTrivia = statement.WithTrailingTrivia(
-                   SyntaxFactory.EndOfLine("\n"),
+                   SyntaxFactory.EndOfLine(" "),
                    SyntaxFactory.Comment("-- " + resolvedOriginalVarName),
                    SyntaxFactory.EndOfLine("\n")
                        );
-                currList.Add(statementWithTrivia);
 
                 // Create assert expression to make sure the variable was assigned the right value
                 string expToAssertString = elementAccess.ToString() + " == ";
