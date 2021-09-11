@@ -25,7 +25,7 @@ namespace Luafuck
             UnaryExpressionSyntax x = SyntaxFactory.ParseExpression($"#{globalTableVariable}") as UnaryExpressionSyntax;
             return x;
         }
-        public static ExpressionSyntax DoubleBracketsString(string str)
+        public static ExpressionSyntax DoubleBracketsString(string str = "")
         {
             return SyntaxFactory.ParseExpression("[["+str+"]]");
         }

@@ -40,7 +40,7 @@ namespace Luafuck
             ScriptObfuscator so = new();
             SyntaxTree obfusTree = so.Obfuscate(tree);
 
-            Console.WriteLine(obfusTree.ToString());
+            Console.Write(obfusTree.ToString());
         }
     }
 }

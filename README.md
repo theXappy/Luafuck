@@ -1,5 +1,5 @@
 # Luafuck
-Rewrite Lua scripts with 13 characters. Charset: `[]()#=._Gchar`  
+Rewrite Lua scripts with 12 characters. Charset: `[]()#._Gchar`  
 
 ## Quick-Start
 1. Clone
