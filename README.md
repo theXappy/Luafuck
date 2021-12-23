@@ -40,7 +40,7 @@ loadstring(transformed_original_code)()
 Where `helper_1` and `helper_2` are short functions used to get **short** handles (in variables with short names) to  
 `string.char` and a propietry decoder function `r` to be used in the transformed_original_code construction expression.  
 Note that `helper_1`, `helper_2` and `transformed_original_code` are strings representing valid lua code.  
-The "loadstring" calls obviously do not use the string "loadstring" in the code, it's retrieved from `_g` using the available characters.  
+The "loadstring" calls obviously do not use the string "loadstring" in the code, it's retrieved from `_G` using the available characters.  
 
 This means this project currently is more of an 'encoder' for Lua scripts, resembling "shellcode encoders" in it's behaviour.
 The encoder itself is, of course, written according to Luafuck's constraint but it does not manipulate original code in a more intimate way.
