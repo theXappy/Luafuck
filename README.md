@@ -33,22 +33,22 @@ Rewrite Lua scripts with 12 characters. Charset: `[]()#._Gchar`
 ## Resulting script
 When transforming a Lua script to Luafuck using this project you'll always get a new script with the following structe:
 ```
-+--------------------------------------+
-| Primitives initalization             |
-+======================================+
-| Constructing original code in a      |
-| large string variable "org_code"     |
-+======================================+
-| calling loadstring(org_code)()       |
-+--------------------------------------+
+loadstring(helper_1)()
+loadstring(helper_2)()
+loadstring(transformed_original_code)()
 ```
+Where `helper_1` and `helper_2` are short functions used to get **short** handles (in variables with short names) to  
+`string.char` and a propietry decoder function `r` to be used in the transformed_original_code construction expression.
+Note that `helper_1`, `helper_2` and `transformed_original_code` are strings representing valid lua code.
+The "loadstring" calls obviously do not use the string "loadstring" in the code, it's retrieved from `_g` using the available characters.
+
 This means this project currently is more of an 'encoder' for Lua scripts, resembling "shellcode encoders" in it's behaviour.
 The encoder itself is, of course, written according to Luafuck's constraint but it does not manipulate original code in a more intimate way.
 
 An example of input & output can be found in this repo's Example directory.
 
 ---
-### Further ideas with unknown possibilties
+### Further ideas (feasibility unknown)
 * `table.concat` is able to concat strings without the char `.` if we manage to:
     1. Construct a table `t` (note we currently don't use `{}`) where the *array part* contains, in order, the substrings we want to concat. AFAIK this can be done on `_G` with `table.insert`,`table.remove` without obvious side effects.
     2. Somehow retrieve the pointer to `concat` from either the table `t`. Again, `_G` is a good candidate but calling `_G['concat']` forces us to create the string `"concat"` in memory (currently done via concatination) or add `ont` to the charset and use a literal (which means +2 in the charset's size)
