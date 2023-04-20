@@ -30,7 +30,7 @@ Rewrite Lua scripts with 12 characters. Charset: `[]()#._Gchar`
 \* Anywhere a string is showing in the examples assume it was constructed by getting individuals chars then concatinating the charaters together.
 
 ## Resulting script
-When transforming a Lua script to Luafuck using this project you'll always get a new script with the following structe:
+When transforming a Lua script to Luafuck using this project you'll always get a new script with the following structure:
 ```
 loadstring(helper_1)()
 loadstring(helper_2)()
