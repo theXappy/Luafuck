@@ -16,10 +16,10 @@ namespace Luafuck
     {
         static void Main(string[] args)
         {
-            string originalFilePath = args.FirstOrDefault();
+            string originalFilePath = args.LastOrDefault();
             if(originalFilePath == null || args.Contains("-h"))
             {
-                Console.WriteLine($"Usage: {System.AppDomain.CurrentDomain.FriendlyName} <input_lua_script_path>");
+                Console.WriteLine($"Usage: {System.AppDomain.CurrentDomain.FriendlyName} [-l] <input_lua_script_path>\n -l   Legacy mode. use 'loadstring' instead of 'load'.");
                 return;
             }
             if(!File.Exists(originalFilePath))
@@ -27,6 +27,9 @@ namespace Luafuck
                 Console.WriteLine($"No such file '{originalFilePath}'");
                 return;
             }
+
+            bool legacyMode = args.Contains("-l");
+
 
             var originalCode  = File.ReadAllText(originalFilePath);
             SyntaxTree tree = LuaSyntaxTree.ParseText(originalCode);
@@ -38,7 +41,7 @@ namespace Luafuck
             //
 
             ScriptObfuscator so = new();
-            SyntaxTree obfusTree = so.Obfuscate(tree);
+            SyntaxTree obfusTree = so.Obfuscate(tree, legacyMode);
 
             Console.Write(obfusTree.ToString());
         }

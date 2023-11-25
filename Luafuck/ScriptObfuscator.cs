@@ -3,7 +3,9 @@ using Loretta.CodeAnalysis.Lua;
 using Loretta.CodeAnalysis.Lua.Syntax;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Net.Http;
 
 namespace Luafuck
 {
@@ -50,7 +52,7 @@ namespace Luafuck
         /// Obfuscate with a really long single concatination chain of strings (each of 1 char) in a statment
         /// Stack is at risk because each concatination counts as a function call
         /// </summary>
-        public SyntaxTree Obfuscate(SyntaxTree tree)
+        public SyntaxTree Obfuscate(SyntaxTree tree, bool legacyLoadstring)
         {
             _globalTableVar = LUA_DEFAULT_GLOBAL_TABLE_VAR;
 
@@ -62,19 +64,30 @@ namespace Luafuck
             // ===
             string varNameForStringChar = "_";
             PrefixExpressionSyntax varAccessorForLiteralChar = SyntaxFactory.IdentifierName(varNameForStringChar);
-            var helper1StringExpr = "_G[" +
-                    // Constructing "loadstring" string
-                    "([[]]).char(#[[.]]..#_G..#[[........]]).." +
-                    "([[]]).char(#[[.]]..#[[.]]..#[[.]]).." +
-                    "[[a]].." +
-                    "([[]]).char(#[[.]]..#_G..#_G).." +
-                    "([[]]).char(#[[.]]..#[[.]]..#[[.....]]).." +
-                    "([[]]).char(#[[.]]..#[[.]]..#[[......]]).." +
-                    "[[r]].." +
-                    "([[]]).char(#[[.]]..#_G..#[[.....]]).." +
-                    "([[]]).char(#[[.]]..#[[.]]..#_G).." +
-                    "([[]]).char(#[[.]]..#_G..#[[...]])" +
-                "]" +
+            string helper1StringExpr = "_G[" +
+                                       // Constructing "load" string
+                                       "([[]]).char(#[[.]]..#_G..#[[........]]).." +
+                                       "([[]]).char(#[[.]]..#[[.]]..#[[.]]).." +
+                                       "[[a]].." +
+                                       "([[]]).char(#[[.]]..#_G..#_G)" +
+                                       "]";
+            if (legacyLoadstring)
+            {
+                helper1StringExpr = "_G[" +
+                                           // Constructing "loadstring" string
+                                           "([[]]).char(#[[.]]..#_G..#[[........]]).." +
+                                           "([[]]).char(#[[.]]..#[[.]]..#[[.]]).." +
+                                           "[[a]].." +
+                                           "([[]]).char(#[[.]]..#_G..#_G).." +
+                                           "([[]]).char(#[[.]]..#[[.]]..#[[.....]]).." +
+                                           "([[]]).char(#[[.]]..#[[.]]..#[[......]]).." +
+                                           "[[r]].." +
+                                           "([[]]).char(#[[.]]..#_G..#[[.....]]).." +
+                                           "([[]]).char(#[[.]]..#[[.]]..#_G).." +
+                                           "([[]]).char(#[[.]]..#_G..#[[...]])" +
+                                           "]";
+            }
+            helper1StringExpr +=
                     "(" +
                         // Constructing "_=([[char]])" string
                         "[[_]].." +
@@ -102,27 +115,67 @@ namespace Luafuck
                     "_[_](#[[.]]..#_G..#[[........]]).." +
                     "_[_](#[[.]]..#[[.]]..#[[.]]).." +
                     "[[a]].." +
-                    "_[_](#[[.]]..#_G..#_G).." +
-                    "_[_](#[[.]]..#[[.]]..#[[.....]]).." +
-                    "_[_](#[[.]]..#[[.]]..#[[......]]).." +
-                    "[[r]].." +
-                    "_[_](#[[.]]..#_G..#[[.....]]).." +
-                    "_[_](#[[.]]..#[[.]]..#_G).." +
-                    "_[_](#[[.]]..#_G..#[[...]])" +
+                    "_[_](#[[.]]..#_G..#_G)" +
                 "]";
+            if (legacyLoadstring)
+            {
+                loadstringShortcut = "_G[" +
+                                     // Constructing "loadstring" string
+                                     "_[_](#[[.]]..#_G..#[[........]]).." +
+                                     "_[_](#[[.]]..#[[.]]..#[[.]]).." +
+                                     "[[a]].." +
+                                     "_[_](#[[.]]..#_G..#_G).." +
+                                     "_[_](#[[.]]..#[[.]]..#[[.....]]).." +
+                                     "_[_](#[[.]]..#[[.]]..#[[......]]).." +
+                                     "[[r]].." +
+                                     "_[_](#[[.]]..#_G..#[[.....]]).." +
+                                     "_[_](#[[.]]..#[[.]]..#_G).." +
+                                     "_[_](#[[.]]..#_G..#[[...]])" +
+                                     "]";
+            }
 
             // ===
             // === Helper 2 -- Shorten 'loadstring' string access
             // ===
-            PrefixExpressionSyntax loadstringHandle3 = SyntaxFactory.ParseExpression(loadstringShortcut) as PrefixExpressionSyntax;
+            PrefixExpressionSyntax loadstringHandle2 = SyntaxFactory.ParseExpression(loadstringShortcut) as PrefixExpressionSyntax;
+            string shortLoadHandleCode;
+            if (legacyLoadstring)
+            {
+                shortLoadHandleCode = "a=[[loadstring]]";
+                stringBuildingCheats.Add(new StringVariable("loadstring", SyntaxFactory.IdentifierName("a")));
+            }
+            else
+            {
+                shortLoadHandleCode = "a=[[load]]";
+                stringBuildingCheats.Add(new StringVariable("load", SyntaxFactory.IdentifierName("a")));
+            }
+
+
+            var shortLoadHandleCodeStringExp = CreateString(funcAccessorForStringChar, shortLoadHandleCode, stringBuildingCheats);
+            var compileHelper2Expr = SyntaxFactoryEx.FuncCall(SyntaxFactoryEx.FuncCall(loadstringHandle2, shortLoadHandleCodeStringExp));
+
+            var loadstringShortcut2 = "_G[a]";
+            PrefixExpressionSyntax loadstringHandle3 = SyntaxFactory.ParseExpression(loadstringShortcut2) as PrefixExpressionSyntax;
 
             // ===
             // === Helper 3 -- Create decoder function 'r'
             // ===
 
             var decoderFuncCode = $"function r(c)h=_.gsub return {varAccessorForLiteralChar}[{varAccessorForLiteralChar}]((h(h(h(h(h(h(h(h(h(h(c,'%(','0'),'%)','1'),'%.','2'),'_','3'),'#','4'),'c','5'),'h','6'),'a','7'),'r','8'),'G','9')))end";
-            var decoderFuncStringExp = CreateString(funcAccessorForStringChar, decoderFuncCode, stringBuildingCheats);
-            var compileHelper3Expr = SyntaxFactoryEx.FuncCall(SyntaxFactoryEx.FuncCall(loadstringHandle3, decoderFuncStringExp));
+
+            // At least starting at Lua 5.4, we're limited to 512 characters per expression.
+            // A single extring expression of ours used to extend beyond that EASIALLY.
+            // So our new strategy is: We create create the string in memory in steps, concatinating smaller parts of it to a single character called 'c'
+            // We do this by calling `load`/`loadstring` several times:
+            // * load('c = "start of code ...."')
+            // * load('c = c .. "more lines of code"')
+            // * load('c = c .. "end of code"')
+            // Then finally:
+            // load(c)
+            List<FunctionCallExpressionSyntax> aggregateHelper3Exprs = CreateStringVariable("c", decoderFuncCode, funcAccessorForStringChar, stringBuildingCheats, loadstringHandle3);
+
+            var finalDecoderFuncStringExp = SyntaxFactory.IdentifierName("c");
+            var finalCompileHelper3Expr = SyntaxFactoryEx.FuncCall(SyntaxFactoryEx.FuncCall(loadstringHandle3, finalDecoderFuncStringExp));
 
             PrefixExpressionSyntax decoderFuncHandle = SyntaxFactory.IdentifierName("r");
 
@@ -131,22 +184,78 @@ namespace Luafuck
             // === Create original code as a string
             // ===            
             var originalCode = tree.ToString();
-            var encodedOriginalCode = CreateStringEncoded(funcAccessorForStringChar, decoderFuncHandle, originalCode);
+            List<ExpressionSyntax> originalCodeExpressions = CreateStringEncoded("G", funcAccessorForStringChar, decoderFuncHandle, originalCode, loadstringHandle3);
+            PrefixExpressionSyntax originalCodeHandle = SyntaxFactory.IdentifierName("G");
+
 
             // ===
             // ===  Wrapping original code in a 'loadstring' call
             // ===
-            var runOriginalCodeInLoadstring = SyntaxFactoryEx.FuncCall(SyntaxFactoryEx.FuncCall(loadstringHandle3, encodedOriginalCode));
+            var runOriginalCodeInLoadstring = SyntaxFactoryEx.FuncCall(SyntaxFactoryEx.FuncCall(loadstringHandle3, originalCodeHandle));
 
+            // * Helpers 
             List<StatementSyntax> finalStatmentsList = new()
             {
                 SyntaxFactory.ExpressionStatement(compileHelper1Expr),
-                SyntaxFactory.ExpressionStatement(compileHelper3Expr),
-                SyntaxFactory.ExpressionStatement(runOriginalCodeInLoadstring),
+                SyntaxFactory.ExpressionStatement(compileHelper2Expr),
             };
+            foreach (var exp in aggregateHelper3Exprs)
+            {
+                finalStatmentsList.Add(SyntaxFactory.ExpressionStatement(exp));
+            }
+            finalStatmentsList.Add(SyntaxFactory.ExpressionStatement(finalCompileHelper3Expr));
+            // * Original code
+            foreach (var exp in originalCodeExpressions)
+            {
+                finalStatmentsList.Add(SyntaxFactory.ExpressionStatement(exp));
+            }
+            finalStatmentsList.Add(SyntaxFactory.ExpressionStatement(runOriginalCodeInLoadstring));
 
             var obfusTree = SyntaxFactoryEx.SyntaxTree(finalStatmentsList);
             return obfusTree;
+        }
+
+        private List<FunctionCallExpressionSyntax> CreateStringVariable(string stringVarName, string stringContent, PrefixExpressionSyntax funcAccessorForStringChar,
+            List<StringVariable> stringBuildingCheats, PrefixExpressionSyntax loadstringHandle3)
+        {
+            string[] splittedDecoderFuncCode = SplitString(stringContent, 12).ToArray();
+
+            var aggregateHelper3Exprs = new List<FunctionCallExpressionSyntax>();
+            bool isFirst = true;
+            foreach (var s in splittedDecoderFuncCode)
+            {
+                string codeAggregationExpressionString = $"{stringVarName}={stringVarName}..[[{s}]]";
+                if (isFirst)
+                {
+                    // First chunk doesn't need " c + " because c is nil.
+                    codeAggregationExpressionString = $"{stringVarName}=\"{s}\"";
+                    isFirst = false;
+                }
+
+                // Create an expression for THE AGGREGATION STRIGN
+                var decoderFuncStringExp =
+                    CreateString(funcAccessorForStringChar, codeAggregationExpressionString, stringBuildingCheats);
+                var aggregateHelper3Expr =
+                    SyntaxFactoryEx.FuncCall(SyntaxFactoryEx.FuncCall(loadstringHandle3, decoderFuncStringExp));
+                aggregateHelper3Exprs.Add(aggregateHelper3Expr);
+            }
+
+            return aggregateHelper3Exprs;
+        }
+
+        static IEnumerable<string> SplitString(string input, int chunkSize)
+        {
+            for (int i = 0; i < input.Length; i += chunkSize)
+            {
+                if (i + chunkSize <= input.Length)
+                {
+                    yield return input.Substring(i, chunkSize);
+                }
+                else
+                {
+                    yield return input.Substring(i);
+                }
+            }
         }
 
         private VariableExpressionSyntax CreateLoadstringHandle(ExpressionSyntax loadstringString)
@@ -187,8 +296,35 @@ namespace Luafuck
         };
 
         private Dictionary<byte, ExpressionSyntax> _createStringEncodedCache = new();
-        private ExpressionSyntax CreateStringEncoded(PrefixExpressionSyntax string_char_func, PrefixExpressionSyntax decoderFunc, string textContent)
+
+        private List<ExpressionSyntax> CreateStringEncoded(string stringVarName, PrefixExpressionSyntax string_char_func,
+            PrefixExpressionSyntax decoderFunc, string textContent, PrefixExpressionSyntax loadstringHandle3)
         {
+            List<ExpressionSyntax> output = new List<ExpressionSyntax>();
+            string[] splitted = SplitString(textContent, 12).ToArray();
+            bool isFirst = true;
+            foreach (var s in splitted)
+            {
+                string codeAggregationExpressionString = $"{stringVarName}={stringVarName}..[[{s}]]";
+                if (isFirst)
+                {
+                    // First chunk doesn't need " h + " because h is nil.
+                    codeAggregationExpressionString = $"{stringVarName}=\"{s}\"";
+                    isFirst = false;
+                }
+
+                var expr = CreateStringEncodedInner(string_char_func, decoderFunc, codeAggregationExpressionString);
+                var aggregateHelper3Expr =
+                    SyntaxFactoryEx.FuncCall(SyntaxFactoryEx.FuncCall(loadstringHandle3, expr));
+                output.Add(aggregateHelper3Expr);
+            }
+
+            return output;
+        }
+
+        private ExpressionSyntax CreateStringEncodedInner(PrefixExpressionSyntax string_char_func, PrefixExpressionSyntax decoderFunc, string textContent)
+        {
+            string[] splittedDecoderFuncCode = SplitString(textContent, 12).ToArray();
             List<ExpressionSyntax> expressions = new(textContent.Length);
             char[] knownChars = new char[] { 'a', 'c', 'h', 'r', ')', '(', '_', '.', '[', 'G', '#', };
             foreach (char c in textContent)
@@ -256,7 +392,7 @@ namespace Luafuck
             alreadyCompiledStrings ??= new();
 
             List<ExpressionSyntax> expressions = new();
-            char[] knownChars = new char[] { 'a', 'c', 'h', 'r', ')', '(', '_', '.', '[', 'G', '#', };
+            char[] knownChars = { 'a', 'c', 'h', 'r', ')', '(', '_', '.', '[', 'G', '#', };
             foreach (char c in textContent)
             {
                 ExpressionSyntax charExpression = null;
@@ -294,12 +430,11 @@ namespace Luafuck
                     ExpressionSyntax[] digitsStringsExpressions = digits.Select(digit => CreateDigit(digit, alreadyCompiledStrings)).ToArray();
                     var digitsConcatination = SyntaxFactoryEx.ConcatStrings(digitsStringsExpressions);
 
-                    // Calling 'string.char' on the string containing all digits (effecitvly the ascii value)
+                    // Calling 'string.char' on the string containing all digits (effectively the ascii value)
                     charExpression = SyntaxFactoryEx.FuncCall(string_char_func, digitsConcatination);
 
                     // Finally add this char expression to the list of all expressions
                     expressions.Add(charExpression);
-
                 }
             }
 
