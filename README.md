@@ -22,15 +22,16 @@ Rewrite Lua scripts with 12 characters. Charset: `[]()#._Gchar`
 11. 'abc'           (string)          ==> Assume 'chr_a','chr_b','chr_c' holds the chars, 'char_a .. char_b .. char_c'
 12. Globals table                     ==> '_G'
 13. A global 'glb'                    ==> '_G[([[glb]])]'
-14. loadstring      (func)            ==> '_G[([[loadstring]])]'
+14. loadstring/load (func)            ==> '_G[([[loadstring]])]' or '_G[([[load]])]'
 15. Execute code                      ==> Construct the code as a string in memory (like any other 
-                                          string, shown above) then call 'loadstring(code_var)()'
+                                          string, shown above) then call 'loadstring(code_var)()' or 'load(code_var)()'
 ```
 
 \* Anywhere a string is showing in the examples assume it was constructed by getting individuals chars then concatinating the charaters together.
 
 ## Resulting script
-When transforming a Lua script to Luafuck using this project you'll always get a new script with the following structure:
+When transforming a Lua script to Luafuck using this project you'll always get a new script with the following structure:  
+(Assuming Lua version <= 5.1. Otherwise replace with 'load' calls)
 ```
 loadstring(helper_1)()
 loadstring(helper_2)()
